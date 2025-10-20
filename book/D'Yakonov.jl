@@ -1,6 +1,6 @@
 using TyPlot
 using LinearAlgebra
-include("chase.jl")
+include("../chase.jl")
 
 
 start_time = time()
@@ -9,7 +9,7 @@ N = M  # 时间网格数量
 error_inf = zeros(length(M))
 Norm = zeros(length(M)-1)
 
-for p = 1:length(M)
+for p in 1:length(M)
     h = 1/M[p]  # 空间步长
     tau = 1/N[p]  # 时间步长
     x = 0:h:1
@@ -25,33 +25,33 @@ for p = 1:length(M)
     c = -tau/(2*h^2) * ones(M[p]-2)
     
     # 设置初值
-    for i = 1:M[p]+1
-        for j = 1:M[p]+1
+    for i in 1:M[p]+1
+        for j in 1:M[p]+1
             Numerical[i,j,1] = exp(1/2*(x[i] + y[j]))  # 初值
         end
     end
     
     # 设置边界条件
-    for j = 1:M[p]+1
-        for k = 1:N[p]+1
+    for j in 1:M[p]+1
+        for k in 1:N[p]+1
             Numerical[1,j,k] = exp(1/2*y[j] - t[k])  # u(0,y,t)
         end
     end
     
-    for j = 1:M[p]+1
-        for k = 1:N[p]+1
+    for j in 1:M[p]+1
+        for k in 1:N[p]+1
             Numerical[M[p]+1,j,k] = exp(1/2*(1+y[j]) - t[k])  # u(1,y,t)
         end
     end
     
-    for i = 1:M[p]+1
-        for k = 1:N[p]+1
+    for i in 1:M[p]+1
+        for k in 1:N[p]+1
             Numerical[i,1,k] = exp(1/2*x[i] - t[k])  # u(x,0,t)
         end
     end
     
-    for i = 1:M[p]+1
-        for k = 1:N[p]+1
+    for i in 1:M[p]+1
+        for k in 1:N[p]+1
             Numerical[i,M[p]+1,k] = exp(1/2*(1+x[i]) - t[k])  # u(x,1,t)
         end
     end
@@ -62,23 +62,23 @@ for p = 1:length(M)
     
     # 计算精确解
     Accurate = zeros(M[p]+1, M[p]+1, N[p]+1)
-    for i = 1:M[p]+1
-        for j = 1:M[p]+1
-            for k = 1:N[p]+1
+    for i in 1:M[p]+1
+        for j in 1:M[p]+1
+            for k in 1:N[p]+1
                 Accurate[i,j,k] = fun(x[i], y[j], t[k])
             end
         end
     end
     
     # 核心部分 - ADI方法
-    for k = 1:N[p]
-        for j = 1:M[p]-1  # 固定j
+    for k in 1:N[p]
+        for j in 1:M[p]-1  # 固定j
             numerical[1,j] = -tau/(2*h^2)*Numerical[1,j,k+1] + (tau/h^2+1)*Numerical[1,j+1,k+1] - tau/(2*h^2)*Numerical[1,j+2,k+1]  # u*0j
             numerical[M[p]+1,j] = -tau/(2*h^2)*Numerical[M[p]+1,j,k+1] + (tau/h^2+1)*Numerical[M[p]+1,j+1,k+1] - tau/(2*h^2)*Numerical[M[p]+1,j+2,k+1]  # u*mj
             
             # 循环生成右端列向量
             numerical_right_vector = zeros(M[p]-1)
-            for i = 1:M[p]-1
+            for i in 1:M[p]-1
                 numerical_right_vector[i] = tau*f(x[i+1], y[j+1], t[k]+tau/2) + Numerical[i+1,j+1,k] +
                     tau/(2*h^2)*(Numerical[i,j+1,k] - 2*Numerical[i+1,j+1,k] + Numerical[i+2,j+1,k]) +
                     tau/(2*h^2)*(Numerical[i+1,j,k] - 2*Numerical[i+1,j+1,k] + Numerical[i+1,j+2,k]) +
@@ -94,9 +94,9 @@ for p = 1:length(M)
             numerical[2:M[p],j] = chase(a, b, c, numerical_right_vector)
         end
         
-        for i = 1:M[p]-1  # 固定i
+        for i in 1:M[p]-1  # 固定i
             Numerical_right_vector = zeros(M[p]-1)
-            for j = 1:M[p]-1
+            for j in 1:M[p]-1
                 Numerical_right_vector[j] = numerical[i+1,j]
             end
             
@@ -118,19 +118,19 @@ for p = 1:length(M)
     subplot(1,3,1)
     surf(X, Y, Accurate[:,:,end])
     xlabel("x"); ylabel("y"); zlabel("Accurate")
-    title("the image of Accurate result")
+    title("精确解")
     grid(true)
     
     subplot(1,3,2)
     surf(X, Y, Numerical[:,:,end])
     xlabel("x"); ylabel("y"); zlabel("Numerical")
-    title("the image of Numerical")
+    title("数值解")
     grid(true)
     
     subplot(1,3,3)
     surf(X, Y, error)
     xlabel("x"); ylabel("y"); zlabel("error")
-    title("the image of error Numerical")
+    title("误差")
     grid(true)
 end
 
