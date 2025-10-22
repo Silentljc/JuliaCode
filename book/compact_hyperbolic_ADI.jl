@@ -207,7 +207,7 @@ end
 figure(length(N)+1)
 plot(1:length(N)-1, Norm, "-b^")
 xlabel("序号"); ylabel("误差阶数")
-title("紧ADI格式误差阶")
+title("紧致ADI格式误差阶")
 grid(true)
 
 println("程序运行",time()-start_time,"秒")

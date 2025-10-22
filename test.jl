@@ -2,149 +2,95 @@ using TyPlot
 using LinearAlgebra
 include("chase.jl")
 
-
-start_time = time()
-M = [5,10,20,40,80]  # 空间网格数量
-N = M  # 时间网格数量
-error_inf = zeros(length(M))
-Norm = zeros(length(M)-1)
-
-for p = 1:length(M)
-    h = 1/M[p]  # 空间步长
-    tau = 1/N[p]  # 时间步长
-    x = 0:h:1
-    y = 0:h:1  
-    t = 0:tau:1
+function pentadiagonal_solve(a, b, c, d, e, f)
+    """
+    五对角追赶法求解线性方程组 Ax = f
+    其中A是五对角矩阵，使用LU分解且U矩阵主对角线元素全为1
     
-    Numerical = zeros(M[p]+1, M[p]+1, N[p]+1)  # u
-    numerical = zeros(M[p]+1, M[p]-1)  # u*
+    参数:
+        a: 下下次对角线向量 (长度n-2)
+        b: 下次对角线向量 (长度n-1)
+        c: 主对角线向量 (长度n)
+        d: 上次对角线向量 (长度n-1)
+        e: 上上次对角线向量 (长度n-2)
+        f: 右端向量 (长度n)
     
-    # 构造三对角矩阵系数
-    a = -tau/(2*h^2) * ones(M[p]-2)
-    b = (tau/h^2 + 1) * ones(M[p]-1) 
-    c = -tau/(2*h^2) * ones(M[p]-2)
+    返回:
+        x: 解向量
+    """
+    n = length(c)
     
-    # 设置初值
-    for i = 1:M[p]+1
-        for j = 1:M[p]+1
-            Numerical[i,j,1] = exp(1/2*(x[i] + y[j]))  # 初值
+    # LU分解，U的主对角线设为1
+    α = zeros(n)   # L的主对角线
+    β = zeros(n)   # L的次对角线
+    γ = zeros(n)   # L的次次对角线
+    δ = zeros(n)   # U的次对角线
+    ε = zeros(n)   # U的次次对角线
+    
+    # 初始化
+    α[1] = c[1]
+    if n > 1
+        δ[1] = d[1] / α[1]
+    end
+    if n > 2
+        ε[1] = e[1] / α[1]
+    end
+    
+    if n > 1
+        β[2] = b[1]
+        α[2] = c[2] - β[2] * δ[1]
+        if n > 2
+            δ[2] = (d[2] - β[2] * ε[1]) / α[2]
+        end
+        if n > 3
+            ε[2] = e[2] / α[2]
         end
     end
     
-    # 设置边界条件
-    for j = 1:M[p]+1
-        for k = 1:N[p]+1
-            Numerical[1,j,k] = exp(1/2*y[j] - t[k])  # u(0,y,t)
-        end
-    end
-    
-    for j = 1:M[p]+1
-        for k = 1:N[p]+1
-            Numerical[M[p]+1,j,k] = exp(1/2*(1+y[j]) - t[k])  # u(1,y,t)
-        end
-    end
-    
-    for i = 1:M[p]+1
-        for k = 1:N[p]+1
-            Numerical[i,1,k] = exp(1/2*x[i] - t[k])  # u(x,0,t)
-        end
-    end
-    
-    for i = 1:M[p]+1
-        for k = 1:N[p]+1
-            Numerical[i,M[p]+1,k] = exp(1/2*(1+x[i]) - t[k])  # u(x,1,t)
-        end
-    end
-    
-    # 定义函数
-    f(x,y,t) = -3/2 * exp(1/2*(x+y)-t)
-    fun(x,y,t) = exp(1/2*(x+y)-t)
-    
-    # 计算精确解
-    Accurate = zeros(M[p]+1, M[p]+1, N[p]+1)
-    for i = 1:M[p]+1
-        for j = 1:M[p]+1
-            for k = 1:N[p]+1
-                Accurate[i,j,k] = fun(x[i], y[j], t[k])
-            end
-        end
-    end
-    
-    # 核心部分 - ADI方法
-    for k = 1:N[p]
-        for j = 1:M[p]-1  # 固定j
-            numerical[1,j] = -tau/(2*h^2)*Numerical[1,j,k+1] + (tau/h^2+1)*Numerical[1,j+1,k+1] - tau/(2*h^2)*Numerical[1,j+2,k+1]  # u*0j
-            numerical[M[p]+1,j] = -tau/(2*h^2)*Numerical[M[p]+1,j,k+1] + (tau/h^2+1)*Numerical[M[p]+1,j+1,k+1] - tau/(2*h^2)*Numerical[M[p]+1,j+2,k+1]  # u*mj
-            
-            # 循环生成右端列向量
-            numerical_right_vector = zeros(M[p]-1)
-            for i = 1:M[p]-1
-                numerical_right_vector[i] = tau*f(x[i+1], y[j+1], t[k]+tau/2) + Numerical[i+1,j+1,k] +
-                    tau/(2*h^2)*(Numerical[i,j+1,k] - 2*Numerical[i+1,j+1,k] + Numerical[i+2,j+1,k]) +
-                    tau/(2*h^2)*(Numerical[i+1,j,k] - 2*Numerical[i+1,j+1,k] + Numerical[i+1,j+2,k]) +
-                    tau^2/(4*h^4)*(Numerical[i,j,k] - 2*Numerical[i+1,j,k] + Numerical[i+2,j,k]) +
-                    tau^2/(4*h^4)*(-2*Numerical[i,j+1,k] + 4*Numerical[i+1,j+1,k] - 2*Numerical[i+2,j+1,k]) +
-                    tau^2/(4*h^4)*(Numerical[i,j+2,k] - 2*Numerical[i+1,j+2,k] + Numerical[i+2,j+2,k])
-            end
-            
-            # 添加边界贡献
-            numerical_right_vector[1] += tau/(2*h^2) * numerical[1,j]
-            numerical_right_vector[M[p]-1] += tau/(2*h^2) * numerical[M[p]+1,j]
-            
-            numerical[2:M[p],j] = chase(a, b, c, numerical_right_vector)
-        end
+    # 递推计算LU分解
+    for i = 3:n
+        γ[i] = a[i-2]
+        β[i] = b[i-1] - γ[i] * δ[i-2]
+        α[i] = c[i] - γ[i] * ε[i-2] - β[i] * δ[i-1]
         
-        for i = 1:M[p]-1  # 固定i
-            Numerical_right_vector = zeros(M[p]-1)
-            for j = 1:M[p]-1
-                Numerical_right_vector[j] = numerical[i+1,j]
-            end
-            
-            Numerical_right_vector[1] += tau/(2*h^2) * Numerical[i+1,1,k+1]
-            Numerical_right_vector[M[p]-1] += tau/(2*h^2) * Numerical[i+1,M[p]+1,k+1]
-            
-            Numerical[i+1,2:M[p],k+1] = chase(a, b, c, Numerical_right_vector)
+        if i < n-1
+            δ[i] = (d[i] - β[i] * ε[i-1]) / α[i]
+            ε[i] = e[i] / α[i]
+        elseif i < n
+            δ[i] = (d[i] - β[i] * ε[i-1]) / α[i]
         end
     end
     
-    error = abs.(Numerical[:,:,end] - Accurate[:,:,end])
-    error_inf[p] = maximum(error)
+    # 前向替代: Ly = f
+    y = zeros(n)
+    y[1] = f[1] / α[1]
+    if n > 1
+        y[2] = (f[2] - β[2] * y[1]) / α[2]
+    end
     
-    # 绘图
-    figure(p)
-    X = repeat(y', length(x), 1)
-    Y = repeat(x, 1, length(y))
+    for i = 3:n
+        y[i] = (f[i] - γ[i] * y[i-2] - β[i] * y[i-1]) / α[i]
+    end
     
-    subplot(1,3,1)
-    surf(X, Y, Accurate[:,:,end])
-    xlabel("x"); ylabel("y"); zlabel("Accurate")
-    title("the image of Accurate result")
-    grid(true)
+    # 回代: Ux = y (U主对角线为1)
+    x = zeros(n)
+    x[n] = y[n]
+    if n > 1
+        x[n-1] = y[n-1] - δ[n-1] * x[n]
+    end
     
-    subplot(1,3,2)
-    surf(X, Y, Numerical[:,:,end])
-    xlabel("x"); ylabel("y"); zlabel("Numerical")
-    title("the image of Numerical")
-    grid(true)
+    for i = n-2:-1:1
+        x[i] = y[i] - δ[i] * x[i+1] - ε[i] * x[i+2]
+    end
     
-    subplot(1,3,3)
-    surf(X, Y, error)
-    xlabel("x"); ylabel("y"); zlabel("error")
-    title("the image of error Numerical")
-    grid(true)
+    return x
 end
 
-# 计算收敛阶
-for k = 2:length(M)
-    X = error_inf[k-1]/error_inf[k]
-    Norm[k-1] = log2(X)
-end
-
-figure(length(N)+1)
-plot(1:length(N)-1, Norm, "-b^")
-xlabel("序号"); ylabel("误差阶数")
-title("ADI格式误差阶")
-grid(true)
-
-println("程序运行",time()-start_time,"秒")
-
+a=ones(7)
+b=ones(8)
+c=ones(9)*4
+d=ones(8)
+e=ones(7)
+f=[3;4;ones(5)*5;4;3]+ones(9)*3
+x = pentadiagonal_solve(a, b, c, d, e, f)
+println(x)
