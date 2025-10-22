@@ -4,7 +4,7 @@ include("../chase.jl")
 
 
 start_time = time()
-M = [5,10,20,40,80]  # 空间网格数量
+M = [5,10,20,40,80,100]  # 空间网格数量
 N = M  # 时间网格数量
 error_inf = zeros(length(M))
 Norm = zeros(length(M)-1)
@@ -137,7 +137,7 @@ end
 # 计算收敛阶
 for k = 2:length(M)
     X = error_inf[k-1]/error_inf[k]
-    Norm[k-1] = log2(X)
+    Norm[k-1] = X
 end
 
 figure(length(N)+1)
