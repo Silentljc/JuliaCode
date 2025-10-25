@@ -2,6 +2,8 @@
 
 using TyPlot
 using LinearAlgebra
+using Printf
+
 include("../chase.jl")
 
 function solve_adi_problem()
@@ -191,7 +193,25 @@ function solve_adi_problem()
     title("ADI格式误差阶")
     grid(true)
 
-    println("程序运行",time()-start_time,"秒")
+    println("\n误差与收敛阶表：")
+    @printf("%-10s %-10s %-15s %-10s\n", "m", "n", "error_inf", "收敛阶")
+    for i in 1:length(M)
+        if i == 1
+            @printf("%-10d %-10d %-15.6e %-10s\n", M[i], N[i], error_inf[i], "-")
+        else
+            @printf("%-10d %-10d %-15.6e %-10.4f\n", M[i], N[i], error_inf[i], Norm[i-1])
+        end
+    end
+
+    elapsed_time = time() - start_time
+    minutes = floor(Int, elapsed_time / 60)
+    seconds = round(Int, elapsed_time % 60)
+    
+    if minutes > 0
+        println("\n程序运行$(minutes)分$(seconds)秒")
+    else
+        println("\n程序运行$(seconds)秒")
+    end
 end
 # 调用函数
 solve_adi_problem()
