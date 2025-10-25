@@ -4,6 +4,7 @@ using TyPlot
 using LinearAlgebra
 using SpecialFunctions 
 using Printf
+using ProgressMeter
 
 include("../chase.jl")
 
@@ -13,13 +14,14 @@ function solve_slow_diffusion()
     α = 0.9
     L = 1
     T = 1
-    m = fill(2000, 5)
-    n = [64,128,256,512,1024]
+    m = fill(20000, 2)
+    n = [640,1280]
 
     error_inf = zeros(length(m))
     Norm = zeros(length(m)-1)
 
     for p in 1:length(m)
+        println("\n正在处理第 $p 个网格 (m=$(m[p]), n=$(n[p]))")
         h = L/m[p]
         τ = T/n[p]
         x = 0:h:L
@@ -51,7 +53,7 @@ function solve_slow_diffusion()
         a = (-1/h^2).*ones(m[p]-2)
         b = (a_α(0)/s + 2/h^2).*ones(m[p]-1)
 
-        for k in 2:n[p]+1
+        @showprogress barlen=50 dt=1 "时间步迭代进度" for k in 2:n[p]+1
             # 创建右端向量
             right_vector = zeros(m[p]-1)
             for i in 1:m[p]-1
@@ -100,6 +102,7 @@ function solve_slow_diffusion()
         xlabel("x"); ylabel("t"); zlabel("error")
         title("误差")
         grid(true)
+
     end
 
     # 计算收敛阶
@@ -114,7 +117,7 @@ function solve_slow_diffusion()
     title("格式误差阶")
     grid(true)
 
-    println("\n=== 误差与收敛阶表 ===")
+    println("\n误差与收敛阶表：")
     @printf("%-10s %-10s %-15s %-10s\n", "m", "n", "error_inf", "收敛阶")
     for i in 1:length(m)
         if i == 1
@@ -124,7 +127,15 @@ function solve_slow_diffusion()
         end
     end
 
-    println("\n程序运行",time()-start_time,"秒")
+    elapsed_time = time() - start_time
+    minutes = floor(Int, elapsed_time / 60)
+    seconds = round(Int, elapsed_time % 60)
+    
+    if minutes > 0
+        println("\n程序运行$(minutes)分$(seconds)秒")
+    else
+        println("\n程序运行$(seconds)秒")
+    end
 
 end
 
