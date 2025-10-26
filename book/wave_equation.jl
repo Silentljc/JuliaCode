@@ -1,4 +1,4 @@
-# 慢扩散方程
+# 波方程
 
 using TyPlot
 using LinearAlgebra
@@ -8,14 +8,16 @@ using ProgressMeter
 
 include("../chase.jl")
 
-function solve_slow_diffusion()
+function solve_wave_equation()
     start_time = time()
 
-    α = 0.9
+    γ = 1.9
     L = 1
     T = 1
-    m = fill(20000, 2)
-    n = [640,1280]
+    # m = fill(20000, 2)
+    # n = [640,1280]
+    m = [20,40]
+    n = m.^2
 
     error_inf = zeros(length(m))
     Norm = zeros(length(m)-1)
@@ -27,31 +29,33 @@ function solve_slow_diffusion()
         x = 0:h:L
         t = 0:τ:T
 
-        s = (τ^α)*gamma(2-α)
-        λ = s/h^2
+        η = (τ^(γ-1))*gamma(3-γ)
 
         u = zeros(m[p]+1, n[p]+1)
 
-        f(x,t) = exp(x)*t^4*(gamma(5+α)/24-t^α)
+        f(x,t) = exp(x)*t^4*(gamma(5+γ)/24-t^γ)
+
+        # ut(x,0)
+        ψ(x) = 0
 
 
         # 边界值
         u[:,1] = zeros(m[p]+1)
-        u[1,:] = t.^(4+α)
-        u[m[p]+1,:] = exp(1).*t.^(4+α)
+        u[1,:] = t.^(4+γ)
+        u[m[p]+1,:] = exp(1).*t.^(4+γ)
 
         # 精确解
         Accurate = zeros(m[p]+1, n[p]+1);
         for i in 1:m[p]+1
             for k in 1:n[p]+1
-                Accurate[i,k] = exp(x[i])*t[k]^(4+α)
+                Accurate[i,k] = exp(x[i])*t[k]^(4+γ)
             end
         end
 
-        a_α(l) = (l+1)^(1-α)-l^(1-α) 
+        b_γ(l) = (l+1)^(2-γ)-l^(2-γ) 
 
-        a = (-1/h^2).*ones(m[p]-2)
-        b = (a_α(0)/s + 2/h^2).*ones(m[p]-1)
+        a = (-1/(2*h^2)).*ones(m[p]-2)
+        b = (b_γ(0)/(η*τ) + 1/h^2).*ones(m[p]-1)
 
         @showprogress barlen=50 dt=1 "时间步迭代进度" for k in 2:n[p]+1
             # 创建右端向量
@@ -60,16 +64,17 @@ function solve_slow_diffusion()
                 Σ = 0
                 if k!=2
                     for l in 1:k-2 
-                        Σ += (a_α(k-1-l-1)-a_α(k-1-l))*u[i+1,l+1]
+                        Σ += (b_γ(k-1-l-1)-b_γ(k-1-l))*(u[i+1,l+1]-u[i+1,l])/τ
                     end
                 end
 
-                right_vector[i] = (1/s)*(Σ + a_α(k-1-1)*u[i+1,1]) + f(x[i+1], t[k])
+                right_vector[i] = (1/η)*(Σ + b_γ(k-1-1)*ψ(x[i+1])) + f(x[i+1], t[k]-τ/2)+
+                    (1/(2*h^2))*u[i,k-1]+(b_γ(0)/(η*τ)-1/h^2)*u[i+1,k-1]+(1/(2*h^2))*u[i+2,k-1]
             end
 
             # 添加边界贡献
-            right_vector[1] -= (-1/h^2)*u[1,k]
-            right_vector[m[p]-1] -= (-1/h^2)*u[m[p]+1,k]
+            right_vector[1] -= (-1/(2*h^2))*u[1,k]
+            right_vector[m[p]-1] -= (-1/(2*h^2))*u[m[p]+1,k]
 
             # 求解三对角线性方程组
             u[2:m[p],k] = chase(a, b, a, right_vector)
@@ -139,4 +144,4 @@ function solve_slow_diffusion()
 
 end
 
-solve_slow_diffusion()
+solve_wave_equation()

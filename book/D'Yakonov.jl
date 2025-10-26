@@ -164,9 +164,9 @@ function solve_adi_problem()
     seconds = round(Int, elapsed_time % 60)
     
     if minutes > 0
-        println("\n程序运行$(minutes)分$(seconds)秒")
+        println("\n程序共运行$(minutes)分$(seconds)秒")
     else
-        println("\n程序运行$(seconds)秒")
+        println("\n程序共运行$(seconds)秒")
     end
 end
 # 调用函数

@@ -118,20 +118,21 @@ function solve_adi_problem()
         # 核心部分
         for k in 2:N[p]
             for j in 1:M[p]-1  # 固定j
-                numerical[1,j] = α*Numerical[1,j,k+1] +
-                    β*Numerical[1,j+1,k+1] +
-                    α*Numerical[1,j+2,k+1]  # u*0j
-                numerical[M[p]+1,j] = α*Numerical[M[p]+1,j,k+1] +
-                    β*Numerical[M[p]+1,j+1,k+1] +
-                    α*Numerical[M[p]+1,j+2,k+1]  # u*mj
+                numerical[1,j] = α*(Numerical[1,j,k+1]+Numerical[1,j,k-1])/2 +
+                    β*(Numerical[1,j+1,k+1]+Numerical[1,j+1,k-1])/2 +
+                    α*(Numerical[1,j+2,k+1]+Numerical[1,j+2,k-1])/2  # u*0j
+                numerical[M[p]+1,j] = α*(Numerical[M[p]+1,j,k+1]+Numerical[M[p]+1,j,k-1])/2 +
+                    β*(Numerical[M[p]+1,j+1,k+1]+Numerical[M[p]+1,j+1,k-1])/2 +
+                    α*(Numerical[M[p]+1,j+2,k+1]+Numerical[M[p]+1,j+2,k-1])/2  # u*mj
                 
                 # 循环生成右端列向量
                 numerical_right_vector = zeros(M[p]-1)
                 for i in 1:M[p]-1
-                    numerical_right_vector[i] = 2*Numerical[i+1,j+1,k] + f_func(x[i+1],y[j+1],t[k])*τ^2 +
-                        (r/2)*(Numerical[i,j+1,k-1] + Numerical[i+2,j+1,k-1]) +
-                        (r/2)*(Numerical[i+1,j,k-1] + Numerical[i+1,j+2,k-1]) - 
-                        (1+r+r)*Numerical[i+1,j+1,k-1]
+                    # numerical_right_vector[i] = 2*Numerical[i+1,j+1,k] + f_func(x[i+1],y[j+1],t[k])*τ^2 +
+                    #     (r/2)*(Numerical[i,j+1,k-1] + Numerical[i+2,j+1,k-1]) +
+                    #     (r/2)*(Numerical[i+1,j,k-1] + Numerical[i+1,j+2,k-1]) - 
+                    #     (1+r+r)*Numerical[i+1,j+1,k-1]
+                    numerical_right_vector[i] = Numerical[i+1,j+1,k]+τ^2/2*f_func(x[i+1],y[j+1],t[k])
                 end
                 
                 # 添加边界贡献
@@ -142,15 +143,19 @@ function solve_adi_problem()
             end
             
             for i in 1:M[p]-1  # 固定i
+                temp1 = (Numerical[i+1,1,k+1]+Numerical[i+1,1,k-1])/2
+                temp2 = (Numerical[i+1,M[p]+1,k+1]+Numerical[i+1,M[p]+1,k-1])/2
                 Numerical_right_vector = zeros(M[p]-1)
                 for j in 1:M[p]-1
                     Numerical_right_vector[j] = numerical[i+1,j]
                 end
                 
-                Numerical_right_vector[1] -= α * Numerical[i+1,1,k+1]
-                Numerical_right_vector[M[p]-1] -= α * Numerical[i+1,M[p]+1,k+1]
+                # Numerical_right_vector[1] -= α * Numerical[i+1,1,k+1]
+                # Numerical_right_vector[M[p]-1] -= α * Numerical[i+1,M[p]+1,k+1]
+                Numerical_right_vector[1] -= α * temp1
+                Numerical_right_vector[M[p]-1] -= α * temp2
                 
-                Numerical[i+1,2:M[p],k+1] = chase(a, b, c, Numerical_right_vector)
+                Numerical[i+1,2:M[p],k+1] = 2*chase(a, b, c, Numerical_right_vector)-Numerical[i+1,2:M[p],k-1]
             end
         end
 
@@ -158,27 +163,27 @@ function solve_adi_problem()
         error_inf[p] = maximum(error)
         
         # 绘图
-        figure(p)
-        X = repeat(y', length(x), 1)
-        Y = repeat(x, 1, length(y))
+        # figure(p)
+        # X = repeat(y', length(x), 1)
+        # Y = repeat(x, 1, length(y))
         
-        subplot(1,3,1)
-        surf(X, Y, Accurate[:,:,end])
-        xlabel("x"); ylabel("y"); zlabel("Accurate")
-        title("精确解")
-        grid(true)
+        # subplot(1,3,1)
+        # surf(X, Y, Accurate[:,:,end])
+        # xlabel("x"); ylabel("y"); zlabel("Accurate")
+        # title("精确解")
+        # grid(true)
         
-        subplot(1,3,2)
-        surf(X, Y, Numerical[:,:,end])
-        xlabel("x"); ylabel("y"); zlabel("Numerical")
-        title("数值解")
-        grid(true)
+        # subplot(1,3,2)
+        # surf(X, Y, Numerical[:,:,end])
+        # xlabel("x"); ylabel("y"); zlabel("Numerical")
+        # title("数值解")
+        # grid(true)
         
-        subplot(1,3,3)
-        surf(X, Y, error)
-        xlabel("x"); ylabel("y"); zlabel("error")
-        title("误差")
-        grid(true)
+        # subplot(1,3,3)
+        # surf(X, Y, error)
+        # xlabel("x"); ylabel("y"); zlabel("error")
+        # title("误差")
+        # grid(true)
     end
 
     # 计算收敛阶
@@ -187,11 +192,11 @@ function solve_adi_problem()
         Norm[k-1] = X 
     end
 
-    figure(length(N)+1)
-    plot(1:length(N)-1, Norm, "-b^")
-    xlabel("序号"); ylabel("误差阶数")
-    title("ADI格式误差阶")
-    grid(true)
+    # figure(length(N)+1)
+    # plot(1:length(N)-1, Norm, "-b^")
+    # xlabel("序号"); ylabel("误差阶数")
+    # title("ADI格式误差阶")
+    # grid(true)
 
     println("\n误差与收敛阶表：")
     @printf("%-10s %-10s %-15s %-10s\n", "m", "n", "error_inf", "收敛阶")
@@ -208,9 +213,9 @@ function solve_adi_problem()
     seconds = round(Int, elapsed_time % 60)
     
     if minutes > 0
-        println("\n程序运行$(minutes)分$(seconds)秒")
+        println("\n程序共运行$(minutes)分$(seconds)秒")
     else
-        println("\n程序运行$(seconds)秒")
+        println("\n程序共运行$(seconds)秒")
     end
 end
 # 调用函数
