@@ -124,6 +124,12 @@ function solve_adi_problem()
                 numerical[M[p]+1,j] = α*(Numerical[M[p]+1,j,k+1]+Numerical[M[p]+1,j,k-1])/2 +
                     β*(Numerical[M[p]+1,j+1,k+1]+Numerical[M[p]+1,j+1,k-1])/2 +
                     α*(Numerical[M[p]+1,j+2,k+1]+Numerical[M[p]+1,j+2,k-1])/2  # u*mj
+                # numerical[1,j] = α*Numerical[1,j,k] +
+                #     β*Numerical[1,j+1,k] +
+                #     α*Numerical[1,j+2,k]  # u*0j
+                # numerical[M[p]+1,j] = α*Numerical[M[p]+1,j,k] +
+                #     β*Numerical[M[p]+1,j+1,k] +
+                #     α*Numerical[M[p]+1,j+2,k]  # u*mj
                 
                 # 循环生成右端列向量
                 numerical_right_vector = zeros(M[p]-1)
@@ -145,6 +151,8 @@ function solve_adi_problem()
             for i in 1:M[p]-1  # 固定i
                 temp1 = (Numerical[i+1,1,k+1]+Numerical[i+1,1,k-1])/2
                 temp2 = (Numerical[i+1,M[p]+1,k+1]+Numerical[i+1,M[p]+1,k-1])/2
+                # temp1 = Numerical[i+1,1,k]
+                # temp2 = Numerical[i+1,M[p]+1,k]
                 Numerical_right_vector = zeros(M[p]-1)
                 for j in 1:M[p]-1
                     Numerical_right_vector[j] = numerical[i+1,j]
