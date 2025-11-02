@@ -35,7 +35,7 @@ function solve_adi_problem()
         # 设置初值
         for i in 1:M[p]+1
             for j in 1:M[p]+1
-                Numerical[i,j,1] = exp(1/2*(x[i]+y[j]))  # 初值
+                Numerical[i,j,1] = exp(1/2*(x[i]+y[j]))  # 初值u(x,y,0)
             end
         end
         
@@ -118,12 +118,12 @@ function solve_adi_problem()
         # 核心部分
         for k in 2:N[p]
             for j in 1:M[p]-1  # 固定j
-                numerical[1,j] = α*(Numerical[1,j,k+1]+Numerical[1,j,k-1])/2 +
-                    β*(Numerical[1,j+1,k+1]+Numerical[1,j+1,k-1])/2 +
-                    α*(Numerical[1,j+2,k+1]+Numerical[1,j+2,k-1])/2  # u*0j
-                numerical[M[p]+1,j] = α*(Numerical[M[p]+1,j,k+1]+Numerical[M[p]+1,j,k-1])/2 +
-                    β*(Numerical[M[p]+1,j+1,k+1]+Numerical[M[p]+1,j+1,k-1])/2 +
-                    α*(Numerical[M[p]+1,j+2,k+1]+Numerical[M[p]+1,j+2,k-1])/2  # u*mj
+                numerical[1,j] = α*(Numerical[1,j,k+1] + Numerical[1,j,k-1])/2 +
+                    β*(Numerical[1,j+1,k+1] + Numerical[1,j+1,k-1])/2 +
+                    α*(Numerical[1,j+2,k+1] + Numerical[1,j+2,k-1])/2  # u*0j
+                numerical[M[p]+1,j] = α*(Numerical[M[p]+1,j,k+1] + Numerical[M[p]+1,j,k-1])/2 +
+                    β*(Numerical[M[p]+1,j+1,k+1] + Numerical[M[p]+1,j+1,k-1])/2 +
+                    α*(Numerical[M[p]+1,j+2,k+1] + Numerical[M[p]+1,j+2,k-1])/2  # u*mj
                 # numerical[1,j] = α*Numerical[1,j,k] +
                 #     β*Numerical[1,j+1,k] +
                 #     α*Numerical[1,j+2,k]  # u*0j
@@ -138,7 +138,7 @@ function solve_adi_problem()
                     #     (r/2)*(Numerical[i,j+1,k-1] + Numerical[i+2,j+1,k-1]) +
                     #     (r/2)*(Numerical[i+1,j,k-1] + Numerical[i+1,j+2,k-1]) - 
                     #     (1+r+r)*Numerical[i+1,j+1,k-1]
-                    numerical_right_vector[i] = Numerical[i+1,j+1,k]+τ^2/2*f_func(x[i+1],y[j+1],t[k])
+                    numerical_right_vector[i] = Numerical[i+1,j+1,k] + τ^2/2*f_func(x[i+1],y[j+1],t[k])
                 end
                 
                 # 添加边界贡献
@@ -149,8 +149,8 @@ function solve_adi_problem()
             end
             
             for i in 1:M[p]-1  # 固定i
-                temp1 = (Numerical[i+1,1,k+1]+Numerical[i+1,1,k-1])/2
-                temp2 = (Numerical[i+1,M[p]+1,k+1]+Numerical[i+1,M[p]+1,k-1])/2
+                temp1 = (Numerical[i+1,1,k+1] + Numerical[i+1,1,k-1])/2
+                temp2 = (Numerical[i+1,M[p]+1,k+1] + Numerical[i+1,M[p]+1,k-1])/2
                 # temp1 = Numerical[i+1,1,k]
                 # temp2 = Numerical[i+1,M[p]+1,k]
                 Numerical_right_vector = zeros(M[p]-1)
@@ -162,13 +162,16 @@ function solve_adi_problem()
                 # Numerical_right_vector[M[p]-1] -= α * Numerical[i+1,M[p]+1,k+1]
                 Numerical_right_vector[1] -= α * temp1
                 Numerical_right_vector[M[p]-1] -= α * temp2
-                
                 Numerical[i+1,2:M[p],k+1] = 2*chase(a, b, c, Numerical_right_vector)-Numerical[i+1,2:M[p],k-1]
             end
         end
 
-        error = abs.(Numerical[:,:,end] - Accurate[:,:,end])
+        error = abs.(Numerical[:,:,:] - Accurate[:,:,:])
         error_inf[p] = maximum(error)
+        # if M[p] == 100
+        #     println(Numerical[76,76,101])
+        #     println(abs(Numerical[76,76,101]-Accurate[76,76,101]))
+        # end
         
         # 绘图
         # figure(p)
@@ -206,8 +209,8 @@ function solve_adi_problem()
     # title("ADI格式误差阶")
     # grid(true)
 
-    println("\n误差与收敛阶表：")
-    @printf("%-10s %-10s %-15s %-10s\n", "m", "n", "error_inf", "收敛阶")
+    println("\n误差与误差比表：")
+    @printf("%-10s %-10s %-15s %-10s\n", "m", "n", "error_inf", "误差比")
     for i in 1:length(M)
         if i == 1
             @printf("%-10d %-10d %-15.6e %-10s\n", M[i], N[i], error_inf[i], "-")

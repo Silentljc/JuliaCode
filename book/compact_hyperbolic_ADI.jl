@@ -190,7 +190,7 @@ function solve_adi_problem()
             end
         end
 
-        error = abs.(Numerical[:,:,end] - Accurate[:,:,end])
+        error = abs.(Numerical[:,:,:] - Accurate[:,:,:])
         error_inf[p] = maximum(error)
         
         # 绘图
@@ -230,8 +230,8 @@ function solve_adi_problem()
     # title("紧致ADI格式误差阶")
     # grid(true)
 
-    println("\n误差与收敛阶表：")
-    @printf("%-10s %-10s %-15s %-10s\n", "m", "n", "error_inf", "收敛阶")
+    println("\n误差与误差比表：")
+    @printf("%-10s %-10s %-15s %-10s\n", "m", "n", "error_inf", "误差比")
     for i in 1:length(M)
         if i == 1
             @printf("%-10d %-10d %-15.6e %-10s\n", M[i], N[i], error_inf[i], "-")

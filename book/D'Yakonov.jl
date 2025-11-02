@@ -110,31 +110,31 @@ function solve_adi_problem()
             end
         end
         
-        error = abs.(Numerical[:,:,end] - Accurate[:,:,end])
+        error = abs.(Numerical[:,:,:] - Accurate[:,:,:])
         error_inf[p] = maximum(error)
         
         # 绘图
-        figure(p)
-        X = repeat(y', length(x), 1)
-        Y = repeat(x, 1, length(y))
+        # figure(p)
+        # X = repeat(y', length(x), 1)
+        # Y = repeat(x, 1, length(y))
         
-        subplot(1,3,1)
-        surf(X, Y, Accurate[:,:,end])
-        xlabel("x"); ylabel("y"); zlabel("Accurate")
-        title("精确解")
-        grid(true)
+        # subplot(1,3,1)
+        # surf(X, Y, Accurate[:,:,end])
+        # xlabel("x"); ylabel("y"); zlabel("Accurate")
+        # title("精确解")
+        # grid(true)
         
-        subplot(1,3,2)
-        surf(X, Y, Numerical[:,:,end])
-        xlabel("x"); ylabel("y"); zlabel("Numerical")
-        title("数值解")
-        grid(true)
+        # subplot(1,3,2)
+        # surf(X, Y, Numerical[:,:,end])
+        # xlabel("x"); ylabel("y"); zlabel("Numerical")
+        # title("数值解")
+        # grid(true)
         
-        subplot(1,3,3)
-        surf(X, Y, error)
-        xlabel("x"); ylabel("y"); zlabel("error")
-        title("误差")
-        grid(true)
+        # subplot(1,3,3)
+        # surf(X, Y, error)
+        # xlabel("x"); ylabel("y"); zlabel("error")
+        # title("误差")
+        # grid(true)
     end
 
     # 计算收敛阶
@@ -143,14 +143,14 @@ function solve_adi_problem()
         Norm[k-1] = X
     end
 
-    figure(length(N)+1)
-    plot(1:length(N)-1, Norm, "-b^")
-    xlabel("序号"); ylabel("误差阶数")
-    title("ADI格式误差阶")
-    grid(true)
+    # figure(length(N)+1)
+    # plot(1:length(N)-1, Norm, "-b^")
+    # xlabel("序号"); ylabel("误差阶数")
+    # title("ADI格式误差阶")
+    # grid(true)
 
-    println("\n误差与收敛阶表：")
-    @printf("%-10s %-10s %-15s %-10s\n", "m", "n", "error_inf", "收敛阶")
+    println("\n误差与误差比表：")
+    @printf("%-10s %-10s %-15s %-10s\n", "m", "n", "error_inf", "误差比")
     for i in 1:length(M)
         if i == 1
             @printf("%-10d %-10d %-15.6e %-10s\n", M[i], N[i], error_inf[i], "-")
