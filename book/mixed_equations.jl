@@ -6,7 +6,7 @@ using SpecialFunctions
 using Printf
 using ProgressMeter
 
-include("../chase.jl")
+include("../solver/chase.jl")
 
 function solve_mixed_equation()
     start_time = time()

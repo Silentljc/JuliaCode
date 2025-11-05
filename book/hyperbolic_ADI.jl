@@ -4,7 +4,7 @@ using TyPlot
 using LinearAlgebra
 using Printf
 
-include("../chase.jl")
+include("../solver/chase.jl")
 
 function solve_adi_problem()
     start_time = time()
