@@ -15,7 +15,7 @@ function chase(a, b, c, d)
     beta  = zeros(n)
     x     = zeros(n)
 
-    # === 追过程 ===
+    # 追过程
     alpha[1] = d[1] / b[1]
     beta[1]  = c[1] / b[1]
     for i in 2:(n - 1)
@@ -25,7 +25,7 @@ function chase(a, b, c, d)
     end
     alpha[n] = (d[n] - a[n - 1] * alpha[n - 1]) / (b[n] - a[n - 1] * beta[n - 1])
 
-    # === 赶过程 ===
+    # 赶过程
     x[n] = alpha[n]
     for i in (n - 1):-1:1
         x[i] = alpha[i] - beta[i] * x[i + 1]
